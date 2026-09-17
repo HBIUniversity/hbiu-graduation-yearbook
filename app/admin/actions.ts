@@ -24,7 +24,7 @@ export async function duplicateYearbook(formData:FormData){
   if(!sourceId || !title) return;
   const db = adminDb();
   const slug = `${slugify(title)}-${Date.now().toString().slice(-5)}`;
-  const { data, error } = await db.rpc('duplicate_yearbook',{ p_source_yearbook_id:sourceId, p_new_title:title, p_new_slug:slug, p_new_year:year });
+  const { data, error } = await db.rpc('duplicate_yearbook',{ p_yearbook_id:sourceId, p_new_title:title, p_new_slug:slug, p_new_year:year });
   if(error) throw new Error(error.message);
   revalidatePath('/admin');
   redirect(`/admin/yearbooks/${data}`);
