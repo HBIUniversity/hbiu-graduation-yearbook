@@ -13,5 +13,5 @@ export function adminDb() {
   return createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-export const YEARBOOK_STORAGE_PUBLIC = 'hbiu-yearbook-published';
-export const YEARBOOK_STORAGE_PRIVATE = 'hbiu-yearbook-editor';
+export const YEARBOOK_STORAGE_PUBLIC = 'yearbook-public';
+export const YEARBOOK_STORAGE_PRIVATE = 'yearbook-editor-private';
