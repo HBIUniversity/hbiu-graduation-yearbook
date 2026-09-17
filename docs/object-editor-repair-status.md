@@ -1,0 +1,11 @@
+# Object editor repair — NOT a completed 35-page conversion
+
+Confirmed source: Canva DAHSZVvMYqk, 35 pages. Do not substitute the 32-page DAHVWK3bwOM or a blank canvas. The original Canva design and live production records have not been modified by this branch.
+
+This branch adds an actual individually editable object engine (text, images, shapes, background), editor-only server draft saves and private image uploads, source identity preservation, optimistic concurrency, undo/redo, unsaved-change navigation checks, and an authenticated integration preview at /admin/yearbooks/[id]/editor?page=2.
+
+Local evidence: 22/22 Node validation tests passed, 15/15 headless Chromium synthetic object-editor checks passed, and all four TypeScript/TSX modules passed syntax transpilation. Browser checks exercised replacing existing text, replacing an image in its existing frame, changing the background without deleting other objects, undo, save conflict retention, 320/390/768/1440px layouts and the unconverted-source guard. These tests are NOT an end-to-end production or real-booklet visual fidelity test. Full Next.js build remains to be checked by CI.
+
+Blocking release: source pages currently have metadata and raster atlas previews, not imported design_v1 object records. The confirmed Canva source itself contains many whole-page raster image elements; their visible words are not native text objects. Attempting to retrieve the Page 2 artwork asset MAHSYulXOVA through the Canva connector returned permission_denied. Do not bypass that control, invent high-resolution URLs, or claim that a preview is a layered import. Only an authorized, verified conversion may populate design_v1. Existing source_pdf_page identity must survive reordering/duplication.
+
+Remaining before merge/production release: complete authorized source extraction/reconstruction and verify every real page against the confirmed 35-page master; refine selection/layer controls; verify real uploads and persisted saves with an authorized editor session; implement reviewed publication snapshots and shared public rendering; verify reload, page switching, original fidelity, and draft/public separation. Never auto-publish or rewrite the original. Do not tell the Chancellor the editor is fixed merely because this branch builds.
