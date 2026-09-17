@@ -1,0 +1,1 @@
+The Yearbook Studio must render the original 2026 booklet pages visually. Page thumbnails and the main canvas use the original booklet artwork; editing occurs as overlays/layers and never replaces the master design.
