@@ -49,9 +49,11 @@ export async function updatePage(formData:FormData){
   const title=String(formData.get('title')||'').trim();
   const body=String(formData.get('body')||'').trim();
   const pageType=String(formData.get('page_type')||'custom');
-  const layoutKey=String(formData.get('layout_key')||'classic');
+  const layoutKey=String(formData.get('layout_key')||'master-2026');
   const db=adminDb();
-  const {error}=await db.from('yearbook_pages').update({title:title||null,page_type:pageType,layout_key:layoutKey,content:{body},updated_at:new Date().toISOString()}).eq('id',id);
+  const {data:existing}=await db.from('yearbook_pages').select('content').eq('id',id).maybeSingle();
+  const prior=(existing?.content && typeof existing.content==='object')?existing.content:{};
+  const {error}=await db.from('yearbook_pages').update({title:title||null,page_type:pageType,layout_key:layoutKey,content:{...prior,body},updated_at:new Date().toISOString()}).eq('id',id);
   if(error) throw new Error(error.message);
   revalidatePath(`/admin/yearbooks/${yearbookId}`);
 }
@@ -61,9 +63,42 @@ export async function addPage(formData:FormData){
   const db=adminDb();
   const {data:maxRow}=await db.from('yearbook_pages').select('page_number').eq('yearbook_id',yearbookId).order('page_number',{ascending:false}).limit(1).maybeSingle();
   const next=(maxRow?.page_number||0)+1;
-  const {error}=await db.from('yearbook_pages').insert({yearbook_id:yearbookId,page_number:next,page_type:'custom',title:`New Page ${next}`,content:{body:''},layout_key:'classic',is_published:false});
+  const {error}=await db.from('yearbook_pages').insert({yearbook_id:yearbookId,page_number:next,page_type:'custom',title:`New Page ${next}`,content:{body:'',visual_source:'blank'},layout_key:'custom',is_published:false});
   if(error) throw new Error(error.message);
   revalidatePath(`/admin/yearbooks/${yearbookId}`);
+  redirect(`/admin/yearbooks/${yearbookId}?page=${next}`);
+}
+
+export async function duplicatePage(formData:FormData){
+  const id=String(formData.get('page_id')||'');
+  const yearbookId=String(formData.get('yearbook_id')||'');
+  const db=adminDb();
+  const {data:page,error}=await db.from('yearbook_pages').select('page_type,title,content,background_asset_path,layout_key').eq('id',id).maybeSingle();
+  if(error||!page) throw new Error(error?.message||'Page not found.');
+  const {data:maxRow}=await db.from('yearbook_pages').select('page_number').eq('yearbook_id',yearbookId).order('page_number',{ascending:false}).limit(1).maybeSingle();
+  const next=(maxRow?.page_number||0)+1;
+  const {error:insertError}=await db.from('yearbook_pages').insert({yearbook_id:yearbookId,page_number:next,page_type:page.page_type,title:`${page.title||'Page'} Copy`,content:page.content||{},background_asset_path:page.background_asset_path,layout_key:page.layout_key,is_published:false});
+  if(insertError) throw new Error(insertError.message);
+  revalidatePath(`/admin/yearbooks/${yearbookId}`);
+  redirect(`/admin/yearbooks/${yearbookId}?page=${next}`);
+}
+
+export async function movePage(formData:FormData){
+  const id=String(formData.get('page_id')||'');
+  const yearbookId=String(formData.get('yearbook_id')||'');
+  const direction=String(formData.get('direction')||'');
+  const db=adminDb();
+  const {data:page}=await db.from('yearbook_pages').select('page_number').eq('id',id).maybeSingle();
+  if(!page) return;
+  const targetNumber=page.page_number+(direction==='up'?-1:1);
+  if(targetNumber<1) return;
+  const {data:target}=await db.from('yearbook_pages').select('id,page_number').eq('yearbook_id',yearbookId).eq('page_number',targetNumber).maybeSingle();
+  if(!target) return;
+  await db.from('yearbook_pages').update({page_number:-9999}).eq('id',id);
+  await db.from('yearbook_pages').update({page_number:page.page_number}).eq('id',target.id);
+  await db.from('yearbook_pages').update({page_number:targetNumber}).eq('id',id);
+  revalidatePath(`/admin/yearbooks/${yearbookId}`);
+  redirect(`/admin/yearbooks/${yearbookId}?page=${targetNumber}`);
 }
 
 export async function deletePage(formData:FormData){
@@ -73,6 +108,7 @@ export async function deletePage(formData:FormData){
   const {error}=await db.from('yearbook_pages').delete().eq('id',id);
   if(error) throw new Error(error.message);
   revalidatePath(`/admin/yearbooks/${yearbookId}`);
+  redirect(`/admin/yearbooks/${yearbookId}?page=1`);
 }
 
 export async function addGraduate(formData:FormData){
